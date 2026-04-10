@@ -1,0 +1,18 @@
+[package]
+name = "minimal-argyll-rust"
+version = "0.1.0"
+edition = "2021"
+description = "A minimal Rust driver for i1Display3 / ColorMunki Display color sensors, ported from ArgyllCMS"
+license = "AGPL-3.0-only OR GPL-2.0-only"
+repository = "https://github.com/Brazos-Innovation-Partners-Hub/MinimalArgyllRustLib"
+readme = "README.md"
+
+[lib]
+name = "minimal_argyll_rust"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+hidapi = "2"
+serde = { version = "1", features = ["derive"] }
+tracing = "0.1"
