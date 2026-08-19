@@ -18,4 +18,4 @@
 
 mod i1d3;
 
-pub use i1d3::{CalibrationData, I1Display3, SensorInfo, XyzReading};
+pub use i1d3::{CalibrationData, I1Display3, SensorInfo, XyzReading, SPEC_N};

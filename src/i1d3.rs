@@ -47,7 +47,8 @@ const PACKET_SIZE: usize = 64;
 const DEFAULT_TIMEOUT_MS: i32 = 1000;
 const MEASURE_TIMEOUT_MS: i32 = 120_000;
 
-const SPEC_N: usize = 351;
+/// Spectral array length: 351 points at 1 nm spacing (380-730 nm).
+pub const SPEC_N: usize = 351;
 
 // ---------------------------------------------------------------------------
 // Command codes
@@ -1015,6 +1016,25 @@ impl I1Display3 {
             firmware: self.cal.version_no.clone(),
             unlock_variant: self.unlock_variant.clone(),
         }
+    }
+
+    /// Borrow the calibration data read from device EEPROM.
+    ///
+    /// # Returns
+    ///
+    /// Reference to the calibration data containing spectral sensitivities,
+    /// ambient filter, calibration matrices, and black levels.
+    pub fn calibration_data(&self) -> &CalibrationData {
+        &self.cal
+    }
+
+    /// Borrow the interpolated CIE 1931 2-degree observer at 1 nm resolution.
+    ///
+    /// # Returns
+    ///
+    /// Tuple of (cie_x, cie_y, cie_z) arrays, each 351 points (380-730 nm).
+    pub fn cie_observer(&self) -> (&[f64; SPEC_N], &[f64; SPEC_N], &[f64; SPEC_N]) {
+        (&self.cie_x, &self.cie_y, &self.cie_z)
     }
 
     /// Blink the LED.
