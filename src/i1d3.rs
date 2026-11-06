@@ -1007,6 +1007,67 @@ impl I1Display3 {
         })
     }
 
+    /// Frequency-only measurement with caller-specified integration time.
+    ///
+    /// Unlike [`measure_xyz`] this never falls back to period mode, so all
+    /// three channels are gated over the same window.  This avoids PWM
+    /// aliasing on pulsed LED sources where per-channel period measurements
+    /// sample different phases.
+    ///
+    /// # Arguments
+    ///
+    /// * `integration_time` – gate window in seconds (clamped to 20 s max).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if calibration data is not loaded or if any channel
+    /// is saturated.
+    pub fn measure_xyz_fixed(&self, integration_time: f64) -> Result<XyzReading> {
+        if !self.cal.loaded {
+            bail!("Calibration data not loaded");
+        }
+
+        let t0 = Instant::now();
+
+        let mut rgb_hz = self.measure_frequency(integration_time)?;
+
+        for i in 0..3 {
+            if rgb_hz[i] > SAT_FREQ {
+                bail!(
+                    "Sensor saturated on channel {i} ({:.0} Hz > {SAT_FREQ:.0} Hz)",
+                    rgb_hz[i]
+                );
+            }
+        }
+
+        for i in 0..3 {
+            rgb_hz[i] -= self.cal.black[i];
+            if rgb_hz[i] < 0.0 {
+                rgb_hz[i] = 0.0;
+            }
+        }
+
+        let diffuser = self.get_diffuser_position()?;
+        let is_ambient = diffuser != 0;
+
+        let xyz = if is_ambient {
+            mat3_mul_vec(&self.cal.ambi_cal, &rgb_hz)
+        } else {
+            let xyz = mat3_mul_vec(&self.cal.emis_cal, &rgb_hz);
+            mat3_mul_vec(&self.cal.ccmat, &xyz)
+        };
+
+        let elapsed = t0.elapsed();
+
+        Ok(XyzReading {
+            x: xyz[0],
+            y: xyz[1],
+            z: xyz[2],
+            rgb_hz,
+            elapsed_ms: elapsed.as_millis() as u32,
+        })
+    }
+
     /// Get sensor identification info.
     pub fn info(&self) -> SensorInfo {
         SensorInfo {
